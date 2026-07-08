@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { apiError, requireAdmin } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/** コメント/議事録の登録・更新（1発表につき1レコード）。空文字で削除。 */
+/**
+ * コメント/議事録（文字起こし + 要約）の登録・更新。1発表につき1レコード。
+ * 両方を空にして保存するとレコードを削除する。
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -13,9 +16,11 @@ export async function PUT(
 
   const { id } = await params;
   const body = await request.json().catch(() => null);
-  const content = typeof body?.content === "string" ? body.content : null;
+  const transcript =
+    typeof body?.transcript === "string" ? body.transcript : null;
+  const summary = typeof body?.summary === "string" ? body.summary : null;
 
-  if (content === null) {
+  if (transcript === null && summary === null) {
     return apiError("コメント内容が不正です", 400);
   }
 
@@ -31,7 +36,10 @@ export async function PUT(
     return apiError("発表が見つかりません", 404);
   }
 
-  if (content.trim() === "") {
+  const transcriptValue = transcript?.trim() ? transcript : null;
+  const summaryValue = summary?.trim() ? summary : null;
+
+  if (transcriptValue === null && summaryValue === null) {
     const { error } = await admin
       .from("comments")
       .delete()
@@ -45,7 +53,11 @@ export async function PUT(
   const { data, error } = await admin
     .from("comments")
     .upsert(
-      { presentation_id: id, content },
+      {
+        presentation_id: id,
+        transcript: transcriptValue,
+        summary: summaryValue,
+      },
       { onConflict: "presentation_id" },
     )
     .select()

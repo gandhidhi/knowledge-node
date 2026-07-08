@@ -81,7 +81,7 @@ export function PresentationForm({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {presentation ? "発表を編集" : "発表を作成"}
@@ -116,6 +116,7 @@ export function PresentationForm({
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="発表の概要（任意）"
+              className="max-h-48 overflow-y-auto"
             />
           </div>
           <DialogFooter>

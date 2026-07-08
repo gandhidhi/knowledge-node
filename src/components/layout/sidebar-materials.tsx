@@ -4,13 +4,8 @@ import { Download, Eye, FileText, Paperclip } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { CollapsibleCard } from "@/components/collapsible-card";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -81,20 +76,16 @@ export function SidebarMaterials({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Paperclip className="size-4" />
-            資料
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {materials.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              資料はありません
-            </p>
-          ) : (
-            <ul className="space-y-3">
+      <CollapsibleCard
+        icon={<Paperclip className="size-4" />}
+        title={`資料 (${materials.length})`}
+      >
+        {materials.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            資料はありません
+          </p>
+        ) : (
+          <ul className="max-h-[60vh] space-y-3 overflow-y-auto">
               {materials.map((material) => (
                 <li
                   key={material.id}
@@ -135,10 +126,9 @@ export function SidebarMaterials({
                   </div>
                 </li>
               ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+          </ul>
+        )}
+      </CollapsibleCard>
 
       <Dialog open={preview !== null} onOpenChange={() => setPreview(null)}>
         <DialogContent className="h-[85vh] sm:max-w-[90vw]">

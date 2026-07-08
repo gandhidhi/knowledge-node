@@ -66,7 +66,7 @@ export function ProjectForm({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {project ? "プロジェクトを編集" : "プロジェクトを作成"}
@@ -91,6 +91,7 @@ export function ProjectForm({
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="プロジェクトの説明（任意）"
+              className="max-h-48 overflow-y-auto"
             />
           </div>
           <DialogFooter>

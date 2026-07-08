@@ -29,10 +29,18 @@ export type PresentationListItem = Presentation & {
   tags: TagWithCategory[];
 };
 
+/** コメント/議事録（文字起こし + 要約） */
+export type CommentContent = {
+  id: string;
+  transcript: string | null;
+  summary: string | null;
+  updated_at: string;
+};
+
 /** 発表詳細 */
 export type PresentationDetail = Presentation & {
   project: Pick<Project, "id" | "name">;
-  comment: { id: string; content: string; updated_at: string } | null;
+  comment: CommentContent | null;
   materials: Material[];
   tags: TagWithCategory[];
 };

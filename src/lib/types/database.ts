@@ -160,21 +160,24 @@ export type Database = {
         Row: {
           id: string;
           presentation_id: string;
-          content: string;
+          transcript: string | null;
+          summary: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           presentation_id: string;
-          content: string;
+          transcript?: string | null;
+          summary?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           presentation_id?: string;
-          content?: string;
+          transcript?: string | null;
+          summary?: string | null;
           created_at?: string;
           updated_at?: string;
         };

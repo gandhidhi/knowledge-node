@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { ArrowLeft, CalendarDays, Info } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { CollapsibleCard } from "@/components/collapsible-card";
 import { SidebarMaterials } from "@/components/layout/sidebar-materials";
 import { CommentViewer } from "@/components/presentations/comment-viewer";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,7 @@ export default function PresentationDetailPage() {
 
   if (!presentation) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 px-4">
         <Skeleton className="h-8 w-96" />
         <div className="flex flex-col gap-6 lg:flex-row">
           <Skeleton className="h-96 flex-1 rounded-xl" />
@@ -51,7 +52,8 @@ export default function PresentationDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    // レイアウト共通の px-4 に加えてさらに px-4（余白 2 倍）
+    <div className="space-y-6 px-4">
       <div className="space-y-3">
         <Link
           href={`/projects/${presentation.project_id}`}
@@ -79,18 +81,34 @@ export default function PresentationDetailPage() {
             ))}
           </div>
         )}
-        {presentation.description && (
-          <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-            {presentation.description}
-          </p>
-        )}
       </div>
 
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
+      {/*
+        モバイル: 説明文 → 議事録 → 資料 の順に縦積み
+        lg 以上: 左カラムに議事録、右カラムに説明文（上）+ 資料（下）
+      */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <CollapsibleCard
+          icon={<Info className="size-4" />}
+          title="説明文"
+          className="self-start lg:col-start-2 lg:row-start-1"
+        >
+          {presentation.description ? (
+            <div className="max-h-[40vh] overflow-y-auto text-sm leading-7 whitespace-pre-wrap">
+              {presentation.description}
+            </div>
+          ) : (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              説明文はありません
+            </p>
+          )}
+        </CollapsibleCard>
+
+        <div className="min-w-0 self-start lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <CommentViewer comment={presentation.comment} />
         </div>
-        <aside className="w-full shrink-0 lg:w-80">
+
+        <aside className="self-start lg:col-start-2 lg:row-start-2">
           <SidebarMaterials
             presentationId={presentation.id}
             materials={presentation.materials}

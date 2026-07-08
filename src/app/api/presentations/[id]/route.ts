@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { apiError, requireUser } from "@/lib/api/auth";
 import { mapTagRows, TAG_SELECT, type RawTagRow } from "@/lib/api/mappers";
-import type { PresentationDetail } from "@/lib/types/app";
+import type { CommentContent, PresentationDetail } from "@/lib/types/app";
 import type { Material } from "@/lib/types/database";
 
 export async function GET(
@@ -17,7 +17,7 @@ export async function GET(
   const { data, error } = await auth.supabase
     .from("presentations")
     .select(
-      `*, project:projects(id, name), comment:comments(id, content, updated_at), materials(*), ${TAG_SELECT}`,
+      `*, project:projects(id, name), comment:comments(id, transcript, summary, updated_at), materials(*), ${TAG_SELECT}`,
     )
     .eq("id", id)
     .single();
@@ -35,10 +35,7 @@ export async function GET(
     created_at: string;
     updated_at: string;
     project: { id: string; name: string };
-    comment:
-      | { id: string; content: string; updated_at: string }
-      | { id: string; content: string; updated_at: string }[]
-      | null;
+    comment: CommentContent | CommentContent[] | null;
     materials: Material[];
     presentation_tags: RawTagRow[];
   };
