@@ -29,6 +29,17 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+
+  // 新規発表はプロジェクト内の末尾に配置する
+  const { data: last } = await admin
+    .from("presentations")
+    .select("sort_order")
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextSortOrder = (last?.sort_order ?? -1) + 1;
+
   const { data, error } = await admin
     .from("presentations")
     .insert({
@@ -36,6 +47,7 @@ export async function POST(request: Request) {
       title,
       description: description || null,
       presented_at: presentedAt,
+      sort_order: nextSortOrder,
     })
     .select()
     .single();

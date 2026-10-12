@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ExternalLink,
   FilePen,
+  GripVertical,
   MessageSquareText,
   Paperclip,
   Plus,
@@ -45,6 +46,7 @@ import type {
   PresentationListResponse,
 } from "@/lib/types/app";
 import type { Presentation, Project } from "@/lib/types/database";
+import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/utils/fetcher";
 import { formatDate } from "@/lib/utils/format";
 
@@ -65,9 +67,14 @@ export default function AdminPresentationsPage() {
     useState<PresentationListItem | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // ドラッグ&ドロップによる並び替え
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+
   const load = useCallback(() => {
     apiFetch<PresentationListResponse>(
-      `/api/projects/${projectId}/presentations?limit=100`,
+      `/api/projects/${projectId}/presentations?limit=100&sort=sort_order&order=asc`,
     )
       .then((res) => setPresentations(res.presentations))
       .catch((e) => {
@@ -75,6 +82,50 @@ export default function AdminPresentationsPage() {
         setPresentations([]);
       });
   }, [projectId]);
+
+  /** 新しい並び順をサーバーに保存する。失敗時は元の並びへ戻す。 */
+  async function persistOrder(ordered: PresentationListItem[]) {
+    const previous = presentations;
+    setPresentations(ordered);
+    setSavingOrder(true);
+    try {
+      await apiFetch(
+        `/api/admin/projects/${projectId}/presentations/reorder`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: ordered.map((p) => p.id) }),
+        },
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "並び順の保存に失敗しました");
+      if (previous) setPresentations(previous);
+    } finally {
+      setSavingOrder(false);
+    }
+  }
+
+  /** dragId の行を overId の位置へ移動した配列を保存する */
+  function handleDrop(targetId: string) {
+    if (!presentations || !dragId || dragId === targetId) {
+      setDragId(null);
+      setOverId(null);
+      return;
+    }
+    const fromIndex = presentations.findIndex((p) => p.id === dragId);
+    const toIndex = presentations.findIndex((p) => p.id === targetId);
+    if (fromIndex === -1 || toIndex === -1) {
+      setDragId(null);
+      setOverId(null);
+      return;
+    }
+    const next = [...presentations];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    setDragId(null);
+    setOverId(null);
+    void persistOrder(next);
+  }
 
   useEffect(() => {
     apiFetch<{ project: Project }>(`/api/projects/${projectId}`)
@@ -124,6 +175,12 @@ export default function AdminPresentationsPage() {
             新規作成
           </Button>
         </div>
+        {presentations && presentations.length > 1 && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            左端のハンドルをドラッグすると並び順を変更できます
+            {savingOrder && "（保存中...）"}
+          </p>
+        )}
       </div>
 
       {presentations === null ? (
@@ -137,6 +194,7 @@ export default function AdminPresentationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10" />
                 <TableHead>タイトル</TableHead>
                 <TableHead className="w-32">発表日</TableHead>
                 <TableHead className="w-72" />
@@ -144,7 +202,41 @@ export default function AdminPresentationsPage() {
             </TableHeader>
             <TableBody>
               {presentations.map((presentation) => (
-                <TableRow key={presentation.id}>
+                <TableRow
+                  key={presentation.id}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (overId !== presentation.id) setOverId(presentation.id);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDrop(presentation.id);
+                  }}
+                  data-dragging={dragId === presentation.id || undefined}
+                  className={cn(
+                    "transition-colors",
+                    dragId === presentation.id && "opacity-40",
+                    overId === presentation.id &&
+                      dragId !== presentation.id &&
+                      "border-t-2 border-t-primary",
+                  )}
+                >
+                  <TableCell className="w-10 align-middle">
+                    <button
+                      type="button"
+                      aria-label="ドラッグして並び替え"
+                      className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={savingOrder}
+                      draggable={!savingOrder}
+                      onDragStart={() => setDragId(presentation.id)}
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setOverId(null);
+                      }}
+                    >
+                      <GripVertical className="size-4" />
+                    </button>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{presentation.title}</p>

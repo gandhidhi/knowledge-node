@@ -87,6 +87,7 @@ export type Database = {
           title: string;
           description: string | null;
           presented_at: string;
+          sort_order: number;
           created_at: string;
           updated_at: string;
         };
@@ -96,6 +97,7 @@ export type Database = {
           title: string;
           description?: string | null;
           presented_at: string;
+          sort_order?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -105,6 +107,7 @@ export type Database = {
           title?: string;
           description?: string | null;
           presented_at?: string;
+          sort_order?: number;
           created_at?: string;
           updated_at?: string;
         };

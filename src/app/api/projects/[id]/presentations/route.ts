@@ -5,7 +5,7 @@ import { mapTagRows, type RawTagRow } from "@/lib/api/mappers";
 import type { PresentationListResponse } from "@/lib/types/app";
 import { sanitizeSearchKeyword } from "@/lib/utils/filters";
 
-const SORTABLE = ["presented_at", "created_at", "title"] as const;
+const SORTABLE = ["sort_order", "presented_at", "created_at", "title"] as const;
 type SortKey = (typeof SORTABLE)[number];
 
 export async function GET(
@@ -24,11 +24,21 @@ export async function GET(
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
-  const sortParam = searchParams.get("sort") ?? "presented_at";
+  // 既定は管理画面で設定した手動並び順（sort_order 昇順）
+  const sortParam = searchParams.get("sort") ?? "sort_order";
   const sort: SortKey = (SORTABLE as readonly string[]).includes(sortParam)
     ? (sortParam as SortKey)
-    : "presented_at";
-  const order = searchParams.get("order") === "asc" ? "asc" : "desc";
+    : "sort_order";
+  const orderParam = searchParams.get("order");
+  // sort_order は昇順、その他の明示指定は降順を既定にする
+  const order =
+    orderParam === "asc"
+      ? "asc"
+      : orderParam === "desc"
+        ? "desc"
+        : sort === "sort_order"
+          ? "asc"
+          : "desc";
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 20));
 

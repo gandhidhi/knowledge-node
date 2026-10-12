@@ -32,6 +32,7 @@ export async function GET(
     title: string;
     description: string | null;
     presented_at: string;
+    sort_order: number;
     created_at: string;
     updated_at: string;
     project: { id: string; name: string };
@@ -50,6 +51,7 @@ export async function GET(
     title: raw.title,
     description: raw.description,
     presented_at: raw.presented_at,
+    sort_order: raw.sort_order,
     created_at: raw.created_at,
     updated_at: raw.updated_at,
     project: raw.project,
