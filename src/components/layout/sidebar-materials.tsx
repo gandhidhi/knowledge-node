@@ -131,15 +131,15 @@ export function SidebarMaterials({
       </CollapsibleCard>
 
       <Dialog open={preview !== null} onOpenChange={() => setPreview(null)}>
-        <DialogContent className="h-[85vh] sm:max-w-[90vw]">
-          <DialogHeader>
+        <DialogContent className="flex h-[85vh] flex-col sm:max-w-[90vw]">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="truncate pr-8">{preview?.name}</DialogTitle>
           </DialogHeader>
           {preview && (
             <iframe
               src={preview.url}
               title={preview.name}
-              className="h-full w-full rounded-md border"
+              className="min-h-0 w-full flex-1 rounded-md border"
             />
           )}
         </DialogContent>
