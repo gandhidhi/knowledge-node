@@ -20,6 +20,34 @@ import { createClient } from "@/lib/supabase/client";
 const NOT_ALLOWED_MESSAGE =
   "このメールアドレスは許可されていません。管理者にお問い合わせください。";
 
+/** 確認リンクの有効期限（Supabase の既定値。表示用） */
+const LINK_EXPIRY_LABEL = "1時間";
+
+type CallbackError = {
+  message: string;
+  /** 期限切れ等、再登録で解決できる場合に新規登録を促す */
+  suggestSignup: boolean;
+};
+
+/**
+ * コールバックのエラーコードを日本語メッセージに変換する。
+ * リンク失効（otp_expired）は原因と対処が分かる文言にする。
+ */
+function interpretError(code: string | null): CallbackError | null {
+  if (!code) return null;
+  if (code === "otp_expired" || code === "access_denied") {
+    return {
+      message: `確認リンクの有効期限（${LINK_EXPIRY_LABEL}）が切れているか、既に使用済みです。お手数ですが、もう一度「新規登録」からやり直してください。`,
+      suggestSignup: true,
+    };
+  }
+  return {
+    message:
+      "認証処理に失敗しました。確認メール内のリンクをもう一度開くか、再度登録をお試しください。",
+    suggestSignup: true,
+  };
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,9 +55,29 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [signupDone, setSignupDone] = useState(false);
 
-  const callbackError = searchParams.get("error");
+  // エラーはクエリ(?error=)にもフラグメント(#error_code=)にも載りうる。
+  // フラグメントはサーバーに届かないためクライアントで読む。初回のみ評価する。
+  const [callbackError, setCallbackError] = useState<CallbackError | null>(
+    () => {
+      const hash =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.hash.replace(/^#/, ""))
+          : null;
+      const code =
+        searchParams.get("error") ??
+        hash?.get("error_code") ??
+        hash?.get("error") ??
+        null;
+      return interpretError(code);
+    },
+  );
+  // 期限切れ等は再登録で解決するため、新規登録タブを初期表示にする
+  const [tab, setTab] = useState(() =>
+    callbackError?.suggestSignup ? "signup" : "login",
+  );
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -109,7 +157,31 @@ function LoginForm() {
       return;
     }
 
+    setCallbackError(null);
     setSignupDone(true);
+  }
+
+  /** 確認メールを再送する（期限切れ・未達の救済） */
+  async function handleResend() {
+    if (!email) {
+      toast.error("メールアドレスを入力してください");
+      return;
+    }
+    setResending(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    setResending(false);
+    if (error) {
+      toast.error(`再送に失敗しました: ${error.message}`);
+      return;
+    }
+    toast.success("確認メールを再送しました");
   }
 
   return (
@@ -122,18 +194,42 @@ function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {callbackError && (
+          {callbackError && !signupDone && (
             <p className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              認証処理に失敗しました。再度お試しください。
+              {callbackError.message}
             </p>
           )}
           {signupDone ? (
-            <div className="space-y-4 text-center">
-              <p className="text-sm">
-                確認メールを送信しました。メール内のリンクを開いて登録を完了してください。
+            <div className="space-y-4">
+              <p className="text-sm font-medium">
+                確認メールを送信しました
               </p>
+              <div className="space-y-2 rounded-md bg-muted/60 p-3 text-sm text-muted-foreground">
+                <p>
+                  メール内のリンクを開くと登録が完了します。リンクの有効期限は
+                  <span className="font-medium text-foreground">
+                    {LINK_EXPIRY_LABEL}
+                  </span>
+                  です。
+                </p>
+                <p>
+                  メールが見当たらない場合は
+                  <span className="font-medium text-foreground">
+                    迷惑メールフォルダ
+                  </span>
+                  もご確認ください。
+                </p>
+              </div>
               <Button
                 variant="outline"
+                onClick={handleResend}
+                disabled={resending}
+                className="w-full"
+              >
+                {resending ? "再送中..." : "確認メールを再送する"}
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => setSignupDone(false)}
                 className="w-full"
               >
@@ -141,7 +237,7 @@ function LoginForm() {
               </Button>
             </div>
           ) : (
-            <Tabs defaultValue="login">
+            <Tabs value={tab} onValueChange={setTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">ログイン</TabsTrigger>
                 <TabsTrigger value="signup">新規登録</TabsTrigger>
