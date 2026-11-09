@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
@@ -269,6 +270,14 @@ function LoginForm() {
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "ログイン中..." : "ログイン"}
                   </Button>
+                  <div className="text-center">
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    >
+                      パスワードをお忘れの方
+                    </Link>
+                  </div>
                 </form>
               </TabsContent>
               <TabsContent value="signup">

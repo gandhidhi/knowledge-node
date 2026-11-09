@@ -5,7 +5,11 @@ import type { Database } from "@/lib/types/database";
 
 /** 認証不要のパスかどうか */
 function isPublicPath(pathname: string) {
-  return pathname === "/login" || pathname.startsWith("/auth");
+  return (
+    pathname === "/login" ||
+    pathname === "/forgot-password" ||
+    pathname.startsWith("/auth")
+  );
 }
 
 /**
