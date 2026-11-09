@@ -63,8 +63,19 @@ export function SidebarMaterials({
   async function handleDownload(material: Material) {
     setBusyId(material.id);
     try {
-      const { downloadUrl } = await fetchUrl(material);
-      window.location.href = downloadUrl;
+      // Supabase Storage の download オプションは日本語名を二重エンコードして
+      // 返すため、ファイルを取得して元のファイル名で保存する。
+      const { url } = await fetchUrl(material);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("ファイルの取得に失敗しました");
+      const blobUrl = URL.createObjectURL(await res.blob());
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = material.file_name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
     } catch (e) {
       toast.error(
         e instanceof Error ? e.message : "ダウンロードに失敗しました",
